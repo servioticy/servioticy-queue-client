@@ -215,7 +215,8 @@ public abstract class QueueClient {
 	}
 
 	protected abstract boolean putWrapper(Object item);
-
+	protected abstract Object getWrapper();
+	
 	protected abstract void connectWrapper() throws QueueClientException;
 
 	protected abstract void disconnectWrapper() throws QueueClientException;

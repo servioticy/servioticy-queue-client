@@ -51,6 +51,12 @@ public class KestrelMemcachedClient extends QueueClient {
 	}
 
 	@Override
+	protected Object getWrapper(){
+		return kestrelClient.get(this.getRelativeAddress());
+		
+	}
+	
+	@Override
 	protected void connectWrapper() throws QueueClientException {
 		if(kestrelClient != null){
 			return;
