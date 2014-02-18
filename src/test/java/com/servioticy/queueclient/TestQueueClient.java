@@ -88,4 +88,10 @@ public class TestQueueClient extends QueueClient {
 
 	}
 
+	@Override
+	protected Object getWrapper() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
 }
