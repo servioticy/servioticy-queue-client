@@ -208,6 +208,13 @@ public abstract class QueueClient {
 		return putCounter;
 	}
 	
+	public Object get(){
+		if (!this.isConnected()) {
+			return false;
+		}	
+		return this.getWrapper();
+	}
+	
 	@Override
 	protected void finalize() throws Throwable {
 		disconnect();
