@@ -15,6 +15,7 @@
  ******************************************************************************/ 
 package com.servioticy.queueclient;
 
+import java.io.Serializable;
 import java.util.LinkedList;
 
 import org.apache.commons.configuration.HierarchicalConfiguration;
@@ -23,7 +24,7 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public class SimpleQueueClient extends QueueClient {
+public class SimpleQueueClient extends QueueClient implements Serializable {
 	
 	LinkedList<Object> queue;
 
