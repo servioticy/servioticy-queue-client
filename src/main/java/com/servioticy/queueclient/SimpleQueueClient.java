@@ -15,6 +15,13 @@
  ******************************************************************************/ 
 package com.servioticy.queueclient;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.LinkedList;
 
@@ -26,24 +33,64 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
  */
 public class SimpleQueueClient extends QueueClient implements Serializable {
 	
-	LinkedList<Object> queue;
+	String filePath;
 
 	public SimpleQueueClient(){
-		this.queue = new LinkedList<Object>();
+	}
+	
+	LinkedList<Object> readQueue() throws ClassNotFoundException, IOException{
+		LinkedList<Object> queue;
+		try {
+			FileInputStream fileIn;
+			fileIn = new FileInputStream(filePath);
+			ObjectInputStream in = new ObjectInputStream(fileIn);
+	        queue = (LinkedList<Object>) in.readObject();
+	        in.close();
+	        fileIn.close();
+		} catch (FileNotFoundException e) {
+			queue = new LinkedList<Object>();
+		}
+		return queue;
+	}
+	
+	void writeQueue(LinkedList<Object> queue) throws IOException{
+		File file = new File(filePath);
+		file.delete();
+		file.createNewFile();
+		FileOutputStream fileOut = new FileOutputStream(file);
+        ObjectOutputStream out = new ObjectOutputStream(fileOut);
+        out.writeObject(queue);
+        out.close();
+        fileOut.close();
 	}
 	
 	@Override
 	protected boolean putWrapper(Object item) {
+		LinkedList<Object> queue;
+		
+		try {
+			queue = readQueue();
+		} catch (Exception e){
+			return false;
+		}
 		queue.add(item);
+		
+		try{
+			writeQueue(queue);
+		} catch (Exception e){
+			return false;
+		}
 		return true;
 	}
 
 	@Override
 	protected void connectWrapper() throws QueueClientException {
+		filePath = this.getBaseAddress() + this.getRelativeAddress();
 	}
 
 	@Override
 	protected void disconnectWrapper() throws QueueClientException {
+		filePath = null;
 	}
 
 	@Override
@@ -53,7 +100,25 @@ public class SimpleQueueClient extends QueueClient implements Serializable {
 
 	@Override
 	protected Object getWrapper() {
-		return queue.getFirst();
+		LinkedList<Object> queue;
+		Object returnValue;
+		try {
+			queue = readQueue();
+		} catch (Exception e) {
+			return null;
+		}
+		if(queue.isEmpty()){
+			return null;
+		}
+		returnValue = queue.getFirst();
+		queue.removeFirst();
+		
+		try{
+			writeQueue(queue);
+		} catch (Exception e) {
+		}
+		
+		return returnValue;
 	}
 
 }
