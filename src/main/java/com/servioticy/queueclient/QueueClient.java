@@ -15,6 +15,7 @@
  ******************************************************************************/ 
 package com.servioticy.queueclient;
 
+import java.io.Serializable;
 import java.util.List;
 
 import org.apache.commons.configuration.ConfigurationException;
@@ -28,7 +29,7 @@ import org.slf4j.LoggerFactory;
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
-public abstract class QueueClient {
+public abstract class QueueClient implements Serializable {
 
 	final static protected Logger logger = LoggerFactory.getLogger(QueueClient.class);;
 
