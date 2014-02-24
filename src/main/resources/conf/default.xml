@@ -2,7 +2,7 @@
 <QueueClientConf>
 	<defaultQueue>
 		<queueType>kestrel</queueType>
-		<baseAddress>172.20.200.229:22133 172.20.200.230:22133</baseAddress>
+		<baseAddress>172.20.200.55</baseAddress>
 		<relativeAddress>services</relativeAddress>
 	</defaultQueue>
 	<queue>
