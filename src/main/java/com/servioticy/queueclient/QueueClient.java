@@ -55,7 +55,11 @@ public abstract class QueueClient implements Serializable {
 									queueConfig;
 		
 		try {
-            config = new XMLConfiguration(Thread.currentThread().getContextClassLoader().getResource(configPath));
+            try {
+                config = new XMLConfiguration(configPath);
+            } catch (Exception e) {
+                config = new XMLConfiguration(Thread.currentThread().getContextClassLoader().getResource(configPath));
+            }
             config.setExpressionEngine(new XPathExpressionEngine());
 
             if(!config.containsKey("defaultQueue/queueType")){
