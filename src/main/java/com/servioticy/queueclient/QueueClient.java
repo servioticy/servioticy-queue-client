@@ -15,9 +15,6 @@
  ******************************************************************************/ 
 package com.servioticy.queueclient;
 
-import java.io.Serializable;
-import java.util.List;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -25,18 +22,21 @@ import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Serializable;
+import java.util.List;
+
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
  * 
  */
 public abstract class QueueClient implements Serializable {
 
-	final static protected Logger logger = LoggerFactory.getLogger(QueueClient.class);;
+    final static protected Logger logger = LoggerFactory.getLogger(QueueClient.class);
 
-	static final private String DEFAULT_CONFIG_PATH = "/conf/default.xml";
+    static final private String DEFAULT_CONFIG_PATH = "default.xml";
 
-	private String baseAddress;
-	private String relativeAddress;
+    private String baseAddress;
+    private String relativeAddress;
 	private boolean connected;
 
 	protected QueueClient() {
@@ -55,10 +55,10 @@ public abstract class QueueClient implements Serializable {
 									queueConfig;
 		
 		try {
-			config = new XMLConfiguration(QueueClient.class.getResource(configPath));
-			config.setExpressionEngine(new XPathExpressionEngine());
+            config = new XMLConfiguration(Thread.currentThread().getContextClassLoader().getResource(configPath));
+            config.setExpressionEngine(new XPathExpressionEngine());
 
-			if(!config.containsKey("defaultQueue/queueType")){
+            if(!config.containsKey("defaultQueue/queueType")){
 				String errMsg = "No default queue. Fix your configuration file.";
 				logger.error(errMsg);
 				throw new QueueClientException(errMsg);
@@ -103,10 +103,10 @@ public abstract class QueueClient implements Serializable {
 		HierarchicalConfiguration	config,
 									queueConfig;
 		try {
-			config = new XMLConfiguration(QueueClient.class.getResource(configPath));
-			config.setExpressionEngine(new XPathExpressionEngine());
-			
-			className = config.getString("queue[type='" + type + "']/className");
+            config = new XMLConfiguration(Thread.currentThread().getContextClassLoader().getResource(configPath));
+            config.setExpressionEngine(new XPathExpressionEngine());
+
+            className = config.getString("queue[type='" + type + "']/className");
 			instance = (QueueClient) Class.forName(className).newInstance();
 			instance.setBaseAddress(baseAddress);
 			instance.setRelativeAddress(relativeAddress);

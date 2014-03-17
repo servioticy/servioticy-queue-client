@@ -15,16 +15,13 @@
  ******************************************************************************/ 
 package com.servioticy.queueclient;
 
-import static org.junit.Assert.*;
+import org.junit.Assert;
+import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import org.junit.Assert;
-import org.junit.Test;
-
-import com.servioticy.queueclient.QueueClient;
-import com.servioticy.queueclient.QueueClientException;
+import static org.junit.Assert.fail;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -47,9 +44,9 @@ public class QueueClientTest {
 	@Test
 	public void testFactoryConfigPathDefault() {
 		try {
-			QueueClient sqc = QueueClient.factory("/conf/nondefault.xml");
-			Assert.assertTrue("TestQueueClient returned", sqc instanceof TestQueueClient);
-			Assert.assertTrue("'init' called", ((TestQueueClient) sqc).initCalled);
+            QueueClient sqc = QueueClient.factory("nondefault.xml");
+            Assert.assertTrue("TestQueueClient returned", sqc instanceof TestQueueClient);
+            Assert.assertTrue("'init' called", ((TestQueueClient) sqc).initCalled);
 		} catch (QueueClientException e) {
 			fail("Factory failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		}
@@ -69,9 +66,9 @@ public class QueueClientTest {
 	@Test
 	public void testFactoryConfigPath() {
 		try {
-			QueueClient sqc = QueueClient.factory("/conf/nondefault.xml", "test2", null, null);
-			Assert.assertTrue("TestQueueClient returned", sqc instanceof TestQueueClient);
-			Assert.assertTrue("'init' called", ((TestQueueClient) sqc).initCalled);
+            QueueClient sqc = QueueClient.factory("nondefault.xml", "test2", null, null);
+            Assert.assertTrue("TestQueueClient returned", sqc instanceof TestQueueClient);
+            Assert.assertTrue("'init' called", ((TestQueueClient) sqc).initCalled);
 		} catch (QueueClientException e) {
 			fail("Factory failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		}
@@ -79,17 +76,17 @@ public class QueueClientTest {
 	
 	@Test(expected = QueueClientException.class)
 	public void testFactoryNonexistentFileDefault() throws QueueClientException{
-		QueueClient.factory("/conf/nonexistent.xml");
+        QueueClient.factory("nonexistent.xml");
 
-	}
-	
-	@Test(expected = QueueClientException.class)
+    }
+
+    @Test(expected = QueueClientException.class)
 	public void testFactoryStringDirConf() throws QueueClientException{
-		QueueClient.factory("/conf");
+        QueueClient.factory("conf");
 
-	}
-	
-	@Test(expected = QueueClientException.class)
+    }
+
+    @Test(expected = QueueClientException.class)
 	public void testFactoryInitException() throws QueueClientException{
 		QueueClient.factory("initException", null, null);
 	}
