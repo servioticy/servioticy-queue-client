@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QueueClientConf>
+    <defaultQueue>
+        <queueType>test</queueType>
+    </defaultQueue>
+    <queue>
+        <type>test</type>
+        <className>com.servioticy.queueclient.TestQueueClient</className>
+        <concreteConf>
+            <connectException>false</connectException>
+            <disconnectException>false</disconnectException>
+            <initQueueException>false</initQueueException>
+        </concreteConf>
+    </queue>
+    <queue>
+        <type>test2</type>
+        <className>com.servioticy.queueclient.TestQueueClient</className>
+        <concreteConf>
+            <connectException>false</connectException>
+            <disconnectException>false</disconnectException>
+            <initQueueException>false</initQueueException>
+        </concreteConf>
+    </queue>
+</QueueClientConf>
