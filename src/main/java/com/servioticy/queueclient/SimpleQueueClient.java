@@ -71,6 +71,8 @@ public class SimpleQueueClient extends QueueClient implements Serializable {
 		try {
 			queue = readQueue();
 		} catch (Exception e){
+            e.printStackTrace();
+            logger.error( e.getMessage());
 			return false;
 		}
 		queue.add(item);
@@ -78,6 +80,8 @@ public class SimpleQueueClient extends QueueClient implements Serializable {
 		try{
 			writeQueue(queue);
 		} catch (Exception e){
+            e.printStackTrace();
+            logger.error( e.getMessage());
 			return false;
 		}
 		return true;

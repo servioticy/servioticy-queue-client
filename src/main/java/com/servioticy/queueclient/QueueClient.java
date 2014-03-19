@@ -22,6 +22,7 @@ import org.apache.commons.configuration.tree.xpath.XPathExpressionEngine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.Serializable;
 import java.util.List;
 
@@ -33,7 +34,7 @@ public abstract class QueueClient implements Serializable {
 
     final static protected Logger logger = LoggerFactory.getLogger(QueueClient.class);
 
-    static final private String DEFAULT_CONFIG_PATH = "default.xml";
+    static final private String DEFAULT_CONFIG_PATH = "queue-client.xml";
 
     private String baseAddress;
     private String relativeAddress;
@@ -44,18 +45,20 @@ public abstract class QueueClient implements Serializable {
 	}
 
 	private static QueueClient createInstance(String configPath) throws QueueClientException{
-		if(configPath == null){
-			return null;
-		}
-		
-		QueueClient instance;
-		String 	className,
-				type;
-		HierarchicalConfiguration 	config,
-									queueConfig;
+        QueueClient instance;
+		File f = new File(configPath);
+        if(!f.exists()){
+            if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
+                return createInstance(configPath, "kestrel", "localhost:22133", "services");
+            }
+        }
+
+		String 	type;
+		HierarchicalConfiguration 	config;
 		
 		try {
-            config = new XMLConfiguration(Thread.currentThread().getContextClassLoader().getResource(configPath));
+            config = new XMLConfiguration(configPath);
+
             config.setExpressionEngine(new XPathExpressionEngine());
 
             if(!config.containsKey("defaultQueue/queueType")){
@@ -64,26 +67,8 @@ public abstract class QueueClient implements Serializable {
 				throw new QueueClientException(errMsg);
 			}
 			type = config.getString("defaultQueue/queueType");
-			className = config.getString("queue[type='" + type + "']/className");
-			instance = (QueueClient) Class.forName(className).newInstance();
-			instance.setBaseAddress(config.getString("defaultQueue/baseAddress", null));
-			instance.setRelativeAddress(config.getString("defaultQueue/relativeAddress", null));
-			queueConfig = (HierarchicalConfiguration) config
-					.configurationAt("queue[type='" + type + "']/concreteConf");
-			instance.init(queueConfig);
-		} catch (InstantiationException e) {
-			String errMsg = "Unable to instantiate the queue class (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		} catch (IllegalAccessException e) {
-			String errMsg = "Unable to load the queue class (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		} catch (ClassNotFoundException e) {
-			String errMsg = "The queue class does not exist (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		} catch (ConfigurationException e) {
+            instance = createInstance(configPath, type, config.getString("defaultQueue/baseAddress", "localhost:22133"), config.getString("defaultQueue/relativeAddress", "services"));
+		}catch (ConfigurationException e) {
 			String errMsg = "'"+ configPath +"' configuration file is malformed (" + e.getMessage() + ").";
 			logger.error(errMsg);
 			throw new QueueClientException(errMsg);
@@ -94,16 +79,24 @@ public abstract class QueueClient implements Serializable {
 	
 	private static QueueClient createInstance(String configPath, String type, String baseAddress, String relativeAddress) throws QueueClientException{
 
-		if(configPath == null){
-			return null;
-		}
-		
-		QueueClient instance;
-		String className;
-		HierarchicalConfiguration	config,
-									queueConfig;
+        QueueClient instance;
+
 		try {
-            config = new XMLConfiguration(Thread.currentThread().getContextClassLoader().getResource(configPath));
+            File f = new File(configPath);
+            if(!f.exists()){
+                if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
+                    KestrelMemcachedClient kInstance = new KestrelMemcachedClient();
+                    kInstance.setBaseAddress(baseAddress);
+                    kInstance.setRelativeAddress(relativeAddress);
+                    kInstance.setExpire(0);
+                    return kInstance;
+                }
+            }
+            String className;
+            HierarchicalConfiguration	config,
+                    queueConfig;
+
+            config = new XMLConfiguration(configPath);
             config.setExpressionEngine(new XPathExpressionEngine());
 
             className = config.getString("queue[type='" + type + "']/className");
@@ -136,18 +129,40 @@ public abstract class QueueClient implements Serializable {
 	}
 	
 	public static QueueClient factory() throws QueueClientException{
-		return createInstance(DEFAULT_CONFIG_PATH);
+        if(System.getProperty("queueClient.config") == null)
+		    return createInstance(DEFAULT_CONFIG_PATH);
+        else
+            return createInstance(System.getProperty("queueClient.config"));
 	}
 	
 	public static QueueClient factory(String configPath) throws QueueClientException {
+        File f = new File(configPath);
+        if(!f.exists()){
+            if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
+                String errMsg = "'"+ configPath +"' configuration file does not exist).";
+                logger.error(errMsg);
+                throw new QueueClientException(errMsg);
+            }
+        }
 		return createInstance(configPath);
 	}
 	
 	public static QueueClient factory(String qType, String qBaseAddress, String qRelativeAddress) throws QueueClientException{
-		return createInstance(DEFAULT_CONFIG_PATH, qType, qBaseAddress, qRelativeAddress);
+        if(System.getProperty("queueClient.config") == null)
+            return createInstance(DEFAULT_CONFIG_PATH, qType, qBaseAddress, qRelativeAddress);
+        else
+            return createInstance(System.getProperty("queueClient.config"), qType, qBaseAddress, qRelativeAddress);
 	}
 	
 	public static QueueClient factory(String configPath, String qType, String qBaseAddress, String qRelativeAddress) throws QueueClientException{
+        File f = new File(configPath);
+        if(!f.exists()){
+            if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
+                String errMsg = "'"+ configPath +"' configuration file does not exist).";
+                logger.error(errMsg);
+                throw new QueueClientException(errMsg);
+            }
+        }
 		return createInstance(configPath, qType, qBaseAddress, qRelativeAddress);
 		
 	}

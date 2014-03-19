@@ -31,13 +31,20 @@ import org.apache.commons.configuration.HierarchicalConfiguration;
  */
 public class KestrelMemcachedClient extends QueueClient {
 
-	private int expire = 0;
+    private int expire = 0;
 
 	MemcachedClient kestrelClient;
 	
 	protected KestrelMemcachedClient() {
 	}
 
+    public void setExpire(int expire) {
+        this.expire = expire;
+    }
+
+    public int getExpire() {
+        return expire;
+    }
 	@Override
 	protected boolean putWrapper(Object item){
 		try{
