@@ -6,7 +6,12 @@
   <name>COMPOSE service queue client</name>
   <description>Java client for enqueuing services to be executed with the specified data.</description>
   <dependencies>
-  	<dependency>
+      <dependency>
+          <groupId>org.apache.thrift</groupId>
+          <artifactId>libthrift</artifactId>
+          <version>0.7.0</version>
+      </dependency>
+      <dependency>
   		<groupId>commons-configuration</groupId>
   		<artifactId>commons-configuration</artifactId>
   		<version>1.9</version>

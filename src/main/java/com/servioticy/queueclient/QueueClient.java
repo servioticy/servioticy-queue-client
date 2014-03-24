@@ -188,9 +188,9 @@ public abstract class QueueClient implements Serializable {
 			return;
 		}
 
-		this.connectWrapper();
+        this.connectImpl();
 
-		this.setConnected(true);
+        this.setConnected(true);
 	}
 
 	public void disconnect()  throws QueueClientException{
@@ -198,17 +198,17 @@ public abstract class QueueClient implements Serializable {
 			return;
 		}
 
-		this.disconnectWrapper();
+        this.disconnectImpl();
 
-		this.setConnected(false);
+        this.setConnected(false);
 	}
 
 	public boolean put(Object item){
 		if (!this.isConnected()) {
 			return false;
-		}	
-		return this.putWrapper(item);
-	}
+		}
+        return this.putImpl(item);
+    }
 	
 	public int put(List<Object> items) {
 		if(items == null || items.size() == 0){
@@ -227,9 +227,9 @@ public abstract class QueueClient implements Serializable {
 	public Object get(){
 		if (!this.isConnected()) {
 			return false;
-		}	
-		return this.getWrapper();
-	}
+		}
+        return this.getImpl();
+    }
 	
 	@Override
 	protected void finalize() throws Throwable {
@@ -237,14 +237,15 @@ public abstract class QueueClient implements Serializable {
 		super.finalize();
 	}
 
-	protected abstract boolean putWrapper(Object item);
-	protected abstract Object getWrapper();
-	
-	protected abstract void connectWrapper() throws QueueClientException;
+    protected abstract boolean putImpl(Object item);
 
-	protected abstract void disconnectWrapper() throws QueueClientException;
+    protected abstract Object getImpl();
 
-	protected abstract void init(HierarchicalConfiguration config) throws QueueClientException;
+    protected abstract void connectImpl() throws QueueClientException;
+
+    protected abstract void disconnectImpl() throws QueueClientException;
+
+    protected abstract void init(HierarchicalConfiguration config) throws QueueClientException;
 
 	public boolean isConnected() {
 		return this.connected;
