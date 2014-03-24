@@ -151,6 +151,9 @@ public class KestrelThriftClient extends QueueClient {
         _kestrels = new ArrayList<KestrelClientInfo>();
         int numHosts = _hosts.length;
         for (String host : _hosts) {
+            if (host.equals("")){
+                continue;
+            }
             String[] addrPort = host.split(":");
             String addr = addrPort[0];
             int port = Integer.parseInt(addrPort[1]);
