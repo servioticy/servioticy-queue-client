@@ -15,7 +15,7 @@
  ******************************************************************************/
 package com.servioticy.queueclient;
 
-import net.lag.kestrel.thrift.Item;
+import net.lag.kestrelcom.thrift.Item;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.thrift.TException;
 
@@ -100,7 +100,10 @@ public class KestrelThriftClient extends QueueClient {
                 List<ByteBuffer> items = new ArrayList<ByteBuffer>();
                 items.add(ByteBuffer.wrap(serialize(item)));
                 try {
-                    if (info.getValidClient().put(getRelativeAddress(), items, 0) == 1) {
+                    if (item instanceof String) {
+                        info.getValidClient().put(getRelativeAddress(), (String) item, 0);
+                        return true;
+                    } else if (info.getValidClient().put(getRelativeAddress(), items, 0) == 1) {
                         return true;
                     }
                 } catch (TException e) {
@@ -149,7 +152,10 @@ public class KestrelThriftClient extends QueueClient {
         int numHosts = _hosts.length;
         for (String host : _hosts) {
             String[] addrPort = host.split(":");
-            _kestrels.add(new KestrelClientInfo(addrPort[0], Integer.getInteger(addrPort[1])));
+            String addr = addrPort[0];
+            int port = Integer.parseInt(addrPort[1]);
+            KestrelClientInfo info = new KestrelClientInfo(addr, port);
+            _kestrels.add(info);
         }
     }
 

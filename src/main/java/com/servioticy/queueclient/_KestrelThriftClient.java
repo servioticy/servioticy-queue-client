@@ -16,9 +16,9 @@
 
 package com.servioticy.queueclient;
 
-import net.lag.kestrel.thrift.Item;
-import net.lag.kestrel.thrift.Kestrel;
-import net.lag.kestrel.thrift.QueueInfo;
+import net.lag.kestrelcom.thrift.Item;
+import net.lag.kestrelcom.thrift.Kestrel;
+import net.lag.kestrelcom.thrift.QueueInfo;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
