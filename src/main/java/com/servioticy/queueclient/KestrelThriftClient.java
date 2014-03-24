@@ -15,19 +15,26 @@
  ******************************************************************************/
 package com.servioticy.queueclient;
 
+import net.lag.kestrel.thrift.Item;
 import org.apache.commons.configuration.HierarchicalConfiguration;
 import org.apache.thrift.TException;
 
+import java.io.*;
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
- *         <p/>
- *         Derived from:
+ *
+ * Derived from:
  *         https://github.com/nathanmarz/storm-kestrel/blob/master/src/jvm/backtype/storm/spout/KestrelThriftSpout.java
+ *         https://github.com/dustin/java-memcached-client/blob/master/src/main/java/net/spy/memcached/transcoders/BaseSerializingTranscoder.java
  */
 public class KestrelThriftClient extends QueueClient {
+
+    private int expire = 0;
 
     private static class KestrelClientInfo {
         public Long blacklistTillTimeMs;
@@ -58,41 +65,19 @@ public class KestrelThriftClient extends QueueClient {
             }
         }
     }
-
     private List<KestrelClientInfo> _kestrels;
     public static final long BLACKLIST_TIME_MS = 1000 * 60;
 
     public KestrelThriftClient() {
     }
 
-    public void open(Map conf, TopologyContext context, SpoutOutputCollector collector) {
-        //TODO: should switch this to maxTopologyMessageTimeout
-        Number timeout = (Number) conf.get(Config.TOPOLOGY_MESSAGE_TIMEOUT_SECS);
-        _messageTimeoutMillis = 1000 * timeout.intValue();
-        _collector = collector;
-        _emitIndex = 0;
-        _kestrels = new ArrayList<KestrelClientInfo>();
-        int numTasks = context.getComponentTasks(context.getThisComponentId()).size();
-        int myIndex = context.getThisTaskIndex();
-        int numHosts = _hosts.size();
-        if (numTasks < numHosts) {
-            for (String host : _hosts) {
-                _kestrels.add(new KestrelClientInfo(host, _port));
-            }
-        } else {
-            String host = _hosts.get(myIndex % numHosts);
-            _kestrels.add(new KestrelClientInfo(host, _port));
-        }
+    public void setExpire(int expire) {
+        this.expire = expire;
+
     }
 
-    public void close() {
-        for (KestrelClientInfo info : _kestrels) info.closeClient();
-
-        // Closing the client connection causes all the open reliable reads to be aborted.
-        // Thus, clear our local buffer of these reliable reads.
-        _emitBuffer.clear();
-
-        _kestrels.clear();
+    public int getExpire() {
+        return expire;
     }
 
     private void blacklist(KestrelClientInfo info, Throwable t) {
@@ -101,35 +86,145 @@ public class KestrelThriftClient extends QueueClient {
         //this case can happen when it fails to connect to Kestrel (and so never stores the connection)
         info.closeClient();
         info.blacklistTillTimeMs = System.currentTimeMillis() + BLACKLIST_TIME_MS;
-
-        int index = _kestrels.indexOf(info);
-
-        // we just closed the connection, so all open reliable reads will be aborted. empty buffers.
-        for (Iterator<EmitItem> i = _emitBuffer.iterator(); i.hasNext(); ) {
-            EmitItem item = i.next();
-            if (item.sourceId.index == index) i.remove();
-        }
     }
 
     @Override
     protected boolean putImpl(Object item) {
+        int numKestrels = _kestrels.size();
+        int kestrelIndex = item.hashCode() % numKestrels;
+        KestrelClientInfo info;
+        long now = System.currentTimeMillis();
+        for (int i = 0; i < numKestrels; i++) {
+            info = _kestrels.get((kestrelIndex + i) % numKestrels);
+            if (now > info.blacklistTillTimeMs) {
+                List<ByteBuffer> items = new ArrayList<ByteBuffer>();
+                items.add(ByteBuffer.wrap(serialize(item)));
+                try {
+                    if (info.getValidClient().put(getRelativeAddress(), items, 0) == 1) {
+                        return true;
+                    }
+                } catch (TException e) {
+                    blacklist(info, e);
+                    continue;
+                }
+            }
+        }
         return false;
     }
 
     @Override
     protected Object getImpl() {
+        int numKestrels = _kestrels.size();
+        int firstKestrelIndex = (new Random()).nextInt() % numKestrels;
+        KestrelClientInfo info;
+        long now = System.currentTimeMillis();
+        List<Item> items = null;
+        for (int i = 0; i < numKestrels; i++) {
+            info = _kestrels.get((firstKestrelIndex + i) % numKestrels);
+            if (now > info.blacklistTillTimeMs) {
+                try {
+                    items = info.getValidClient().get(getRelativeAddress(), 1, 0, 0);
+                } catch (TException e) {
+                    blacklist(info, e);
+                    continue;
+                }
+                for (Item item : items) {
+                    Object retItem = deserialize(item.get_data());
+                    if (retItem == null) {
+                        continue;
+                    }
+                    return retItem;
+                }
+            }
+            continue;
+        }
         return null;
     }
 
     @Override
     protected void connectImpl() throws QueueClientException {
+        String[] _hosts = this.getBaseAddress().split(" ");
+
+        _kestrels = new ArrayList<KestrelClientInfo>();
+        int numHosts = _hosts.length;
+        for (String host : _hosts) {
+            String[] addrPort = host.split(":");
+            _kestrels.add(new KestrelClientInfo(addrPort[0], Integer.getInteger(addrPort[1])));
+        }
     }
 
     @Override
     protected void disconnectImpl() throws QueueClientException {
+        for (KestrelClientInfo info : _kestrels) info.closeClient();
+        _kestrels.clear();
     }
 
     @Override
     protected void init(HierarchicalConfiguration config) throws QueueClientException {
+        checkBaseAddress();
+        checkRelativeAddress();
+        // If config is null, just load the defaults.
+        if (config == null) {
+            config = new HierarchicalConfiguration();
+        }
+        this.expire = config.getInt("expire", 0);
+    }
+
+    private void checkBaseAddress() throws QueueClientException {
+        if (this.getBaseAddress() == null) {
+            String errMsg = "Malformed configuration file: No servers defined for KestrelMemcachedClient (baseAddress).";
+            logger.error(errMsg);
+            throw new QueueClientException(errMsg);
+        }
+    }
+
+    private void checkRelativeAddress() throws QueueClientException {
+        if (this.getRelativeAddress() == null) {
+            String errMsg = "Malformed configuration file: No queue name defined for KestrelMemcachedClient (relativeAddress).";
+            logger.error(errMsg);
+            throw new QueueClientException(errMsg);
+        }
+    }
+
+    protected byte[] serialize(Object o) {
+        if (o == null) {
+            throw new NullPointerException("Can't serialize null");
+        }
+        byte[] rv = null;
+        ByteArrayOutputStream bos = null;
+        ObjectOutputStream os = null;
+        try {
+            bos = new ByteArrayOutputStream();
+            os = new ObjectOutputStream(bos);
+            os.writeObject(o);
+            os.close();
+            bos.close();
+            rv = bos.toByteArray();
+        } catch (IOException e) {
+            logger.warn("Non-serializable object", e);
+        }
+        return rv;
+    }
+
+    protected Object deserialize(byte[] in) {
+        Object rv = null;
+        ByteArrayInputStream bis = null;
+        ObjectInputStream is = null;
+        try {
+            if (in != null) {
+                bis = new ByteArrayInputStream(in);
+                is = new ObjectInputStream(bis);
+                rv = is.readObject();
+                is.close();
+                bis.close();
+            }
+        } catch (IOException e) {
+            logger.warn("Caught IOException decoding %d bytes of data",
+                    in == null ? 0 : in.length, e);
+        } catch (ClassNotFoundException e) {
+            logger.warn("Caught CNFE decoding %d bytes of data",
+                    in == null ? 0 : in.length, e);
+        }
+        return rv;
     }
 }

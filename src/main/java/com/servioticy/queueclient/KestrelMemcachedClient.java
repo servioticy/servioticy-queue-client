@@ -48,9 +48,9 @@ public class KestrelMemcachedClient extends QueueClient {
 		} catch (Exception e) {
 			logger.error("KestrelMemcached put failed ({})", e.getMessage());
 			return false;
-		} 
-		
-	}
+        }
+
+    }
 
 	@Override
     protected Object getImpl() {
