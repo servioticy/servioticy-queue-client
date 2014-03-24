@@ -99,8 +99,8 @@ public class QueueClientTest {
 			Assert.assertTrue("Is connected", sqc.isConnected());
 			sqc.disconnect();
 			Assert.assertTrue("Is not connected", !sqc.isConnected());
-			Assert.assertTrue("'disconnectWrapper' called", ((TestQueueClient) sqc).disconnectCalled);
-		} catch (QueueClientException e) {
+            Assert.assertTrue("'disconnectImpl' called", ((TestQueueClient) sqc).disconnectCalled);
+        } catch (QueueClientException e) {
 			fail("Connect failed: " + e.getMessage() + "\n" + e.getStackTrace());
 		}
 	}

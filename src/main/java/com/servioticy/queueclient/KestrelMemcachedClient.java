@@ -15,15 +15,10 @@
  ******************************************************************************/ 
 package com.servioticy.queueclient;
 
-import java.io.IOException;
-
-import net.spy.memcached.AddrUtil;
-import net.spy.memcached.ConnectionFactory;
-import net.spy.memcached.ConnectionFactoryBuilder;
-import net.spy.memcached.FailureMode;
-import net.spy.memcached.MemcachedClient;
-
+import net.spy.memcached.*;
 import org.apache.commons.configuration.HierarchicalConfiguration;
+
+import java.io.IOException;
 
 /**
  * @author Álvaro Villalba Navarro <alvaro.villalba@bsc.es>
@@ -34,9 +29,9 @@ public class KestrelMemcachedClient extends QueueClient {
     private int expire = 0;
 
 	MemcachedClient kestrelClient;
-	
-	protected KestrelMemcachedClient() {
-	}
+
+    public KestrelMemcachedClient() {
+    }
 
     public void setExpire(int expire) {
         this.expire = expire;
@@ -46,26 +41,26 @@ public class KestrelMemcachedClient extends QueueClient {
         return expire;
     }
 	@Override
-	protected boolean putWrapper(Object item){
-		try{
+    protected boolean putImpl(Object item) {
+        try{
 			// This is blocking by now
 			return kestrelClient.set(this.getRelativeAddress(), expire, item).get();
 		} catch (Exception e) {
 			logger.error("KestrelMemcached put failed ({})", e.getMessage());
 			return false;
-		} 
-		
-	}
+        }
+
+    }
 
 	@Override
-	protected Object getWrapper(){
-		return kestrelClient.get(this.getRelativeAddress());
+    protected Object getImpl() {
+        return kestrelClient.get(this.getRelativeAddress());
 		
 	}
 	
 	@Override
-	protected void connectWrapper() throws QueueClientException {
-		if(kestrelClient != null){
+    protected void connectImpl() throws QueueClientException {
+        if(kestrelClient != null){
 			return;
 		}
 		try {
@@ -87,8 +82,8 @@ public class KestrelMemcachedClient extends QueueClient {
 	}
 
 	@Override
-	protected void disconnectWrapper(){
-		if(kestrelClient == null){
+    protected void disconnectImpl() {
+        if(kestrelClient == null){
 			return;
 		}
 
