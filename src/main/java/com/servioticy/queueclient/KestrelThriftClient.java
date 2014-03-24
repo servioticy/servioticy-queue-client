@@ -91,7 +91,7 @@ public class KestrelThriftClient extends QueueClient {
     @Override
     protected boolean putImpl(Object item) {
         int numKestrels = _kestrels.size();
-        int kestrelIndex = item.hashCode() % numKestrels;
+        int kestrelIndex = Math.abs(item.hashCode()) % numKestrels;
         KestrelClientInfo info;
         long now = System.currentTimeMillis();
         for (int i = 0; i < numKestrels; i++) {
@@ -153,12 +153,10 @@ public class KestrelThriftClient extends QueueClient {
         for (String host : _hosts) {
             if (host.equals("")){
                 continue;
+
             }
             String[] addrPort = host.split(":");
-            String addr = addrPort[0];
-            int port = Integer.parseInt(addrPort[1]);
-            KestrelClientInfo info = new KestrelClientInfo(addr, port);
-            _kestrels.add(info);
+            _kestrels.add(new KestrelClientInfo(addrPort[0], Integer.parseInt(addrPort[1])));
         }
     }
 
