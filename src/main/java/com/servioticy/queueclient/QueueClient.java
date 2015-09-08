@@ -44,134 +44,81 @@ public abstract class QueueClient implements Serializable {
 		
 	}
 
-	private static QueueClient createInstance(String configPath) throws QueueClientException{
+	private static QueueClient createInstance(String address, String queueName, String className, HierarchicalConfiguration classConfig) throws QueueClientException{
         QueueClient instance;
-		File f = new File(configPath);
-        if(!f.exists()){
-            if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
-                return createInstance(configPath, "kestrel", "localhost:22133", "services");
-            }
+        try {
+            instance = (QueueClient) Class.forName(className).newInstance();
+            instance.setAddress(address);
+            instance.setQueueName(queueName);
+            instance.init(classConfig);
+        } catch (InstantiationException e) {
+            String errMsg = "Unable to instantiate the queue class (" + e.getMessage() + ").";
+            logger.error(errMsg);
+            throw new QueueClientException(errMsg);
+        } catch (IllegalAccessException e) {
+            String errMsg = "Unable to load the queue class (" + e.getMessage() + ").";
+            logger.error(errMsg);
+            throw new QueueClientException(errMsg);
+        } catch (ClassNotFoundException e) {
+            String errMsg = "The queue class does not exist (" + e.getMessage() + ").";
+            logger.error(errMsg);
+            throw new QueueClientException(errMsg);
         }
-
-		String 	type;
-		HierarchicalConfiguration 	config;
-		
-		try {
-            config = new XMLConfiguration(configPath);
-
-            config.setExpressionEngine(new XPathExpressionEngine());
-
-            if(!config.containsKey("defaultQueue/queueType")){
-				String errMsg = "No default queue. Fix your configuration file.";
-				logger.error(errMsg);
-				throw new QueueClientException(errMsg);
-			}
-			type = config.getString("defaultQueue/queueType");
-            instance = createInstance(configPath, type, config.getString("defaultQueue/baseAddress", "localhost:22133"), config.getString("defaultQueue/relativeAddress", "services"));
-		}catch (ConfigurationException e) {
-			String errMsg = "'"+ configPath +"' configuration file is malformed (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		}
 		
 		return instance;
 	}
 	
-	private static QueueClient createInstance(String configPath, String type, String baseAddress, String relativeAddress) throws QueueClientException{
+	private static QueueClient createInstance(String configPath) throws QueueClientException{
 
-        QueueClient instance;
-
-		try {
-            File f = new File(configPath);
-            if(!f.exists()){
-                if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
-                    KestrelMemcachedClient kInstance = new KestrelMemcachedClient();
-                    kInstance.setBaseAddress(baseAddress);
-                    kInstance.setRelativeAddress(relativeAddress);
-                    kInstance.setExpire(0);
-                    return kInstance;
-                }
-            }
-            String className;
-            HierarchicalConfiguration	config,
-                    queueConfig;
-
+		File f = new File(configPath);
+		if(!f.exists() && (Thread.currentThread().getContextClassLoader().getResource(configPath) == null)){
+			String errMsg = "'"+ configPath +"' configuration file doesn't exist.";
+			logger.error(errMsg);
+			throw new QueueClientException(errMsg);
+		}
+        String className;
+        HierarchicalConfiguration	config,
+                queueConfig;
+        String address;
+        String queueName;
+        try {
             config = new XMLConfiguration(configPath);
             config.setExpressionEngine(new XPathExpressionEngine());
-
-            className = config.getString("queue[type='" + type + "']/className");
-			instance = (QueueClient) Class.forName(className).newInstance();
-			instance.setBaseAddress(baseAddress);
-			instance.setRelativeAddress(relativeAddress);
-			queueConfig = (HierarchicalConfiguration) config
-					.configurationAt("queue[type='" + type + "']/concreteConf");
-			instance.init(queueConfig);
+            queueConfig = (HierarchicalConfiguration) config
+                    .configurationAt("classConf");
+			address = config.getString("address", "localhost:2181");
+			queueName = config.getString("queueName", "updates");
+            className = config.getString("className", "com.servioticy.queueclient.KafkaClient");
 			
-		} catch (InstantiationException e) {
-			String errMsg = "Unable to instantiate the queue class (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		} catch (IllegalAccessException e) {
-			String errMsg = "Unable to load the queue class (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		} catch (ClassNotFoundException e) {
-			String errMsg = "The queue class does not exist (" + e.getMessage() + ").";
-			logger.error(errMsg);
-			throw new QueueClientException(errMsg);
-		} catch (ConfigurationException e) {
+		}  catch (ConfigurationException e) {
 			String errMsg = "'"+ configPath +"' configuration file is malformed (" + e.getMessage() + ").";
 			logger.error(errMsg);
 			throw new QueueClientException(errMsg);
 		}
 		
-		return instance;
+		return createInstance(address, queueName, className, queueConfig);
 	}
 	
-	public static QueueClient factory() throws QueueClientException{
+	public static QueueClient factory(String address, String queueName, String className, HierarchicalConfiguration classConf) throws QueueClientException {
+        return createInstance(address, queueName, className, classConf);
+    }
+
+    public static QueueClient factory(String configPath) throws QueueClientException {
+        return createInstance(configPath);
+    }
+
+    public static QueueClient factory() throws QueueClientException {
         if(System.getProperty("queueClient.config") == null)
-		    return createInstance(DEFAULT_CONFIG_PATH);
+            return createInstance(DEFAULT_CONFIG_PATH);
         else
             return createInstance(System.getProperty("queueClient.config"));
-	}
+    }
 	
-	public static QueueClient factory(String configPath) throws QueueClientException {
-        File f = new File(configPath);
-        if(!f.exists()){
-            if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
-                String errMsg = "'"+ configPath +"' configuration file does not exist).";
-                logger.error(errMsg);
-                throw new QueueClientException(errMsg);
-            }
-        }
-		return createInstance(configPath);
-	}
-	
-	public static QueueClient factory(String qType, String qBaseAddress, String qRelativeAddress) throws QueueClientException{
-        if(System.getProperty("queueClient.config") == null)
-            return createInstance(DEFAULT_CONFIG_PATH, qType, qBaseAddress, qRelativeAddress);
-        else
-            return createInstance(System.getProperty("queueClient.config"), qType, qBaseAddress, qRelativeAddress);
-	}
-	
-	public static QueueClient factory(String configPath, String qType, String qBaseAddress, String qRelativeAddress) throws QueueClientException{
-        File f = new File(configPath);
-        if(!f.exists()){
-            if(Thread.currentThread().getContextClassLoader().getResource(configPath) == null){
-                String errMsg = "'"+ configPath +"' configuration file does not exist).";
-                logger.error(errMsg);
-                throw new QueueClientException(errMsg);
-            }
-        }
-		return createInstance(configPath, qType, qBaseAddress, qRelativeAddress);
-		
-	}
-	
-	public void setBaseAddress(String qBaseAddress){
+	public void setAddress(String qBaseAddress){
 		this.baseAddress = qBaseAddress;
 	}
 	
-	public void setRelativeAddress(String qRelativeAddress){
+	public void setQueueName(String qRelativeAddress){
 		this.relativeAddress = qRelativeAddress;
 	}
 	
