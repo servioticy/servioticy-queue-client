@@ -8,6 +8,7 @@ import org.apache.kafka.clients.producer.ProducerRecord;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
 
@@ -21,6 +22,7 @@ public class KafkaClient extends QueueClient {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
         ObjectOutput out = null;
         try {
+            out = new ObjectOutputStream(bos);
             out.writeObject(item);
             this.producer.send(new ProducerRecord<Integer, byte[]>(this.getRelativeAddress(), item.hashCode(), bos.toByteArray())).get();
         } catch (Exception e) {
