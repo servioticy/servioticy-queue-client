@@ -81,7 +81,7 @@ public class SimpleQueueClient extends QueueClient implements Serializable {
 
     @Override
     protected void connectImpl() throws QueueClientException {
-        filePath = this.getBaseAddress() + this.getRelativeAddress();
+        filePath = this.getAddress() + this.getQueueName();
     }
 
     @Override

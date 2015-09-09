@@ -44,7 +44,7 @@ public class KestrelMemcachedClient extends QueueClient {
     protected boolean putImpl(Object item) {
         try{
 			// This is blocking by now
-			return kestrelClient.set(this.getRelativeAddress(), expire, item).get();
+			return kestrelClient.set(this.getQueueName(), expire, item).get();
 		} catch (Exception e) {
 			logger.error("KestrelMemcached put failed ({})", e.getMessage());
 			return false;
@@ -54,7 +54,7 @@ public class KestrelMemcachedClient extends QueueClient {
 
 	@Override
     protected Object getImpl() {
-        return kestrelClient.get(this.getRelativeAddress());
+        return kestrelClient.get(this.getQueueName());
 		
 	}
 	
@@ -72,7 +72,7 @@ public class KestrelMemcachedClient extends QueueClient {
 	        ConnectionFactory memcachedConnectionFactory = builder.build();
 			kestrelClient = new MemcachedClient(
 					memcachedConnectionFactory,
-					AddrUtil.getAddresses(this.getBaseAddress()));
+					AddrUtil.getAddresses(this.getAddress()));
 		} catch (IOException e) {
 			kestrelClient = null;
 			String errMsg = "Unable to connect to the queue (" + e.getMessage() + ").";
@@ -104,7 +104,7 @@ public class KestrelMemcachedClient extends QueueClient {
 	}
 	
 	private void checkBaseAddress() throws QueueClientException{
-		if(this.getBaseAddress() == null){
+		if(this.getAddress() == null){
 			String errMsg = "Malformed configuration file: No servers defined for KestrelMemcachedClient (baseAddress).";
 			logger.error(errMsg);
 			throw new QueueClientException(errMsg);
@@ -112,7 +112,7 @@ public class KestrelMemcachedClient extends QueueClient {
 	}
 	
 	private void checkRelativeAddress() throws QueueClientException{
-		if(this.getRelativeAddress() == null){
+		if(this.getQueueName() == null){
 			String errMsg = "Malformed configuration file: No queue name defined for KestrelMemcachedClient (relativeAddress).";
 			logger.error(errMsg);
 			throw new QueueClientException(errMsg);

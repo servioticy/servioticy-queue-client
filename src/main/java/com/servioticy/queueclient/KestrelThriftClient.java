@@ -101,9 +101,9 @@ public class KestrelThriftClient extends QueueClient {
                 items.add(ByteBuffer.wrap(serialize(item)));
                 try {
                     if (item instanceof String) {
-                        info.getValidClient().put(getRelativeAddress(), (String) item, 0);
+                        info.getValidClient().put(getQueueName(), (String) item, 0);
                         return true;
-                    } else if (info.getValidClient().put(getRelativeAddress(), items, 0) == 1) {
+                    } else if (info.getValidClient().put(getQueueName(), items, 0) == 1) {
                         return true;
                     }
                 } catch (TException e) {
@@ -126,7 +126,7 @@ public class KestrelThriftClient extends QueueClient {
             info = _kestrels.get((firstKestrelIndex + i) % numKestrels);
             if (now > info.blacklistTillTimeMs) {
                 try {
-                    items = info.getValidClient().get(getRelativeAddress(), 1, 0, 0);
+                    items = info.getValidClient().get(getQueueName(), 1, 0, 0);
                 } catch (TException e) {
                     blacklist(info, e);
                     continue;
@@ -146,7 +146,7 @@ public class KestrelThriftClient extends QueueClient {
 
     @Override
     protected void connectImpl() throws QueueClientException {
-        String[] _hosts = this.getBaseAddress().split(" ");
+        String[] _hosts = this.getAddress().split(" ");
 
         _kestrels = new ArrayList<KestrelClientInfo>();
         int numHosts = _hosts.length;
@@ -178,7 +178,7 @@ public class KestrelThriftClient extends QueueClient {
     }
 
     private void checkBaseAddress() throws QueueClientException {
-        if (this.getBaseAddress() == null) {
+        if (this.getAddress() == null) {
             String errMsg = "Malformed configuration file: No servers defined for KestrelMemcachedClient (baseAddress).";
             logger.error(errMsg);
             throw new QueueClientException(errMsg);
@@ -186,7 +186,7 @@ public class KestrelThriftClient extends QueueClient {
     }
 
     private void checkRelativeAddress() throws QueueClientException {
-        if (this.getRelativeAddress() == null) {
+        if (this.getQueueName() == null) {
             String errMsg = "Malformed configuration file: No queue name defined for KestrelMemcachedClient (relativeAddress).";
             logger.error(errMsg);
             throw new QueueClientException(errMsg);

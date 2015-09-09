@@ -36,8 +36,8 @@ public abstract class QueueClient implements Serializable {
 
     static final private String DEFAULT_CONFIG_PATH = "queue-client.xml";
 
-    private String baseAddress;
-    private String relativeAddress;
+    private String address;
+    private String queueName;
 	private boolean connected;
 
 	protected QueueClient() {
@@ -114,20 +114,20 @@ public abstract class QueueClient implements Serializable {
             return createInstance(System.getProperty("queueClient.config"));
     }
 	
-	public void setAddress(String qBaseAddress){
-		this.baseAddress = qBaseAddress;
+	public void setAddress(String address){
+		this.address = address;
 	}
 	
-	public void setQueueName(String qRelativeAddress){
-		this.relativeAddress = qRelativeAddress;
+	public void setQueueName(String queueName){
+		this.queueName = queueName;
 	}
 	
-	public String getBaseAddress(){
-		return this.baseAddress;
+	public String getAddress(){
+		return this.address;
 	}
 	
-	public String getRelativeAddress(){
-		return this.relativeAddress;
+	public String getQueueName(){
+		return this.queueName;
 	}
 	
 	public void connect() throws QueueClientException {
