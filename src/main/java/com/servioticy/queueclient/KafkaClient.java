@@ -16,7 +16,7 @@ import java.util.concurrent.ExecutionException;
  * Created by alvaro on 07/09/15.
  */
 public class KafkaClient extends QueueClient {
-    private KafkaProducer<Integer, byte[]> producer;
+    private KafkaProducer<String, byte[]> producer;
     @Override
     protected boolean putImpl(Object item) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
@@ -24,7 +24,7 @@ public class KafkaClient extends QueueClient {
         try {
             out = new ObjectOutputStream(bos);
             out.writeObject(item);
-            this.producer.send(new ProducerRecord<Integer, byte[]>(this.getRelativeAddress(), item.hashCode(), bos.toByteArray())).get();
+            this.producer.send(new ProducerRecord<String, byte[]>(this.getRelativeAddress(), Integer.toHexString(item.hashCode()), bos.toByteArray())).get();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
@@ -52,7 +52,7 @@ public class KafkaClient extends QueueClient {
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.StringSerializer");
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, "org.apache.kafka.common.serialization.ByteArraySerializer");
 
-        this.producer = new KafkaProducer<Integer, byte[]>(props);
+        this.producer = new KafkaProducer<String, byte[]>(props);
 
     }
 
