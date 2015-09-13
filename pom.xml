@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.servioticy</groupId>
     <artifactId>queue-client</artifactId>
-    <version>0.2</version>
+    <version>0.2-SNAPSHOT</version>
     <name>COMPOSE service queue client</name>
     <description>Java client for enqueuing services to be executed with the specified data.</description>
     <dependencies>

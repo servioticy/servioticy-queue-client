@@ -18,11 +18,13 @@ public class KafkaClient extends QueueClient {
     @Override
     protected boolean putImpl(Object item) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
-        ObjectOutput out = null;
+        ObjectOutput out ;
         try {
             out = new ObjectOutputStream(bos);
             out.writeObject(item);
-            this.producer.send(new ProducerRecord<String, byte[]>(this.getQueueName(), Integer.toHexString(item.hashCode()), bos.toByteArray())).get();
+            byte[] msg = bos.toByteArray();
+            bos.close();
+            this.producer.send(new ProducerRecord<String, byte[]>(this.getQueueName(), Integer.toHexString(item.hashCode()), msg)).get();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
