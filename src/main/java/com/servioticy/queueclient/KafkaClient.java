@@ -24,7 +24,7 @@ public class KafkaClient extends QueueClient {
             out.writeObject(item);
             byte[] msg = bos.toByteArray();
             bos.close();
-            this.producer.send(new ProducerRecord<String, byte[]>(this.getQueueName(), Integer.toHexString(item.hashCode()), msg)).get();
+            this.producer.send(new ProducerRecord<String, byte[]>(this.getQueueName(), null, msg)).get();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
